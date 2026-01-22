@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "814762444234",
+    "project_id": "chatx-8b91a",
+    "storage_bucket": "chatx-8b91a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814762444234:android:a354e3455e2170ba297b33",
+        "android_client_info": {
+          "package_name": "com.app.chatx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "814762444234-24i47afgo8s7kglv54ulffn7mu2rjdjj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.chatx",
+            "certificate_hash": "fa07be49f7244d74e152e5ecadb22aefdb951adc"
+          }
+        },
+        {
+          "client_id": "814762444234-o6ml7gqah516ld33sse39mt50lrh5fu8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDXY5aQ7F04lMGuOQa2OvOOHljd89tSH4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "814762444234-o6ml7gqah516ld33sse39mt50lrh5fu8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "814762444234-dqvuh2t58oigh8dmrfok8dvft4ukov68.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.app.chatx"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
