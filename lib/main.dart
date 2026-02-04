@@ -1,5 +1,7 @@
 import 'package:chatx/firebase_options.dart';
 import 'package:chatx/providers/provider.dart';
+import 'package:chatx/services/fcm_token_service.dart';
+import 'package:chatx/services/notification_service.dart';
 import 'package:chatx/view/auth/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,6 +20,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  await NotificationService.init();
+
+// Listen token refresh globally
+  FcmTokenService.listenTokenRefresh();
   ///request permission before initialized zeGoCloud
   await requestPermission();
   final user = FirebaseAuth.instance.currentUser;

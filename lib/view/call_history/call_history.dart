@@ -36,7 +36,7 @@ class _CallHistoryScreenState
           'Calls history',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -62,31 +62,31 @@ class _CallHistoryScreenState
 
           final calls = _cachedCalls.reversed.toList();
 
-            return ListView.separated(
+          return ListView.separated(
             physics: const BouncingScrollPhysics(),
             cacheExtent: 600,
             itemCount: calls.length,
             separatorBuilder: (_, __) =>
-                const Divider(height: 1, indent: 72),
+            const Divider(height: 1, indent: 72),
             itemBuilder: (context, index) {
               final call = calls[index];
               final bool isVideo = call.callType == 'video';
               final bool isMissedIncoming =
                   call.callStatus == 'missed' &&
-                  call.senderId != currentUserId;
+                      call.senderId != currentUserId;
 
               final Color callColor =
-                  isMissedIncoming ? Colors.red : Colors.grey.shade700;
+              isMissedIncoming ? Colors.red : Colors.grey.shade700;
 
               final String otherUserId =
-                  call.senderId == currentUserId
-                      ? call.receiverId!
-                      : call.senderId;
+              call.senderId == currentUserId
+                  ? call.receiverId!
+                  : call.senderId;
 
               final String otherUserName =
-                  call.senderId == currentUserId
-                      ? (call.receiverName ?? '')
-                      : call.senderName;
+              call.senderId == currentUserId
+                  ? (call.receiverName ?? '')
+                  : call.senderName;
 
               return ListTile(
                 leading: CircleAvatar(
@@ -107,7 +107,7 @@ class _CallHistoryScreenState
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color:
-                        isMissedIncoming ? Colors.red : Colors.black,
+                    isMissedIncoming ? Colors.red : Colors.black,
                   ),
                 ),
                 subtitle: Column(
@@ -126,8 +126,8 @@ class _CallHistoryScreenState
                           isMissedIncoming
                               ? 'Missed ${isVideo ? "video" : "voice"} call'
                               : isVideo
-                                  ? 'Video call'
-                                  : 'Voice call',
+                              ? 'Video call'
+                              : 'Voice call',
                           style: TextStyle(
                             color: callColor,
                             fontSize: 13,

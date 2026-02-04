@@ -32,6 +32,8 @@ dependencies:
   zego_express_engine: 3.22.0
   chat_bubbles: ^1.8.0
   voice: ^0.0.1
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

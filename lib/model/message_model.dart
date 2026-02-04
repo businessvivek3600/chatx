@@ -81,9 +81,9 @@ class MessageModel {
       'message': message,
       'type': type,
       'timestamp':
-          timestamp != null ? Timestamp.fromDate(timestamp!) : null,
+      timestamp != null ? Timestamp.fromDate(timestamp!) : null,
       'readBy': readBy?.map(
-        (key, value) => MapEntry(key, Timestamp.fromDate(value)),
+            (key, value) => MapEntry(key, Timestamp.fromDate(value)),
       ),
       'imageUrl': imageUrl,
       'callType': callType,

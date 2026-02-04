@@ -489,7 +489,7 @@ class ChatServices {
     try {
       // 1. Reset unread count (this NEVER needs an index)
       await _firestore.collection('chats').doc(chatId).update({
-        'unReadCount.${currentUser.uid}': 0,
+        'unreadCount.${currentUser.uid}': 0,
       });
 
       // 2. Get all messages in chat (simple query)
@@ -592,6 +592,7 @@ class ChatServices {
       debugPrint("Error setting typing status: $e");
     }
   }
+
   ///_________________________CALL HISTORY--------------------
 Stream<List<MessageModel>> getCallHistory() {
   return _firestore
@@ -652,10 +653,5 @@ Future<void> deleteMessage({
 }
 
   Future<void> deleteChat(String chatId) async {}
-
-
-
-
-
 
 }
