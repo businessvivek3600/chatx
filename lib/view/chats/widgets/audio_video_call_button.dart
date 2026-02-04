@@ -13,8 +13,8 @@ ZegoSendCallInvitationButton actionButton(
     String chatId,
 ) => ZegoSendCallInvitationButton(
   invitees: [ZegoUIKitUser(id: receiverId, name: receiverName)],
-  iconSize: Size(30, 30),
-  buttonSize: Size(40, 50),
+  iconSize: Size(45, 45),
+  buttonSize: Size(50, 50),
   resourceID: "chatx_call",
   isVideoCall: isVideo,
   onPressed: (code, message, errorInvitees) {

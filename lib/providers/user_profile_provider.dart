@@ -166,6 +166,10 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     _authSubscription.cancel();
     super.dispose();
   }
+
+  Future<void> updateName(String trim) async {}
+
+  void removeProfilePhoto() {}
 }
 
 ///provider
