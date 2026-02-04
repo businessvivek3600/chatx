@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import 'fcm_token_service.dart';
+
 class AuthMethod {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -87,6 +89,7 @@ class AuthMethod {
         'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
       });
+      await FcmTokenService.saveToken();
 
       print("✅ LOGIN SUCCESS: ${cred.user!.email}");
       return "success";
