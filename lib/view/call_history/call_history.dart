@@ -12,18 +12,40 @@ class CallHistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text("Calls")),
-      body: StreamBuilder<List<MessageModel>>(
+      body:StreamBuilder<List<MessageModel>>(
         stream: chatServices.getCallHistory(),
         builder: (context, snapshot) {
-          // if (!snapshot.hasData) {
-          //   return Center(child: CircularProgressIndicator());
-          // }
-
-          final calls = snapshot.data ?? [];
-          if (calls.isEmpty) {
-            return Center(child: Text("No calls yet"));
+          // 1. Still loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
+          // 2. Error
+          if (snapshot.hasError) {
+            debugPrint("Call history error: ${snapshot.error}");
+            return Center(child: Text("Something went wrong"));
+          }
+
+          // 3. Data received (even if empty)
+          final calls = snapshot.data ?? [];
+
+          // 🔍 DEBUG PRINT
+          debugPrint("Call history count: ${calls.length}");
+          for (var call in calls) {
+            debugPrint(
+              "CALL → ${call.senderName}, "
+                  "type=${call.callType}, "
+                  "status=${call.callStatus}, "
+                  "time=${call.timestamp}",
+            );
+          }
+
+          // 4. No calls
+          if (calls.isEmpty) {
+            return const Center(child: Text("No calls yet"));
+          }
+
+          // 5. Show list
           return ListView.builder(
             itemCount: calls.length,
             itemBuilder: (context, index) {
@@ -49,6 +71,7 @@ class CallHistoryScreen extends ConsumerWidget {
           );
         },
       ),
+
     );
   }
 }
