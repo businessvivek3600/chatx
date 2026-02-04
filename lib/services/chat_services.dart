@@ -578,14 +578,17 @@ class ChatServices {
       debugPrint("Error setting typing status: $e");
     }
   }
+
   ///_________________________CALL HISTORY--------------------
-Stream<List<MessageModel>> getCallHistory() {
-  return _firestore
-      .collection('messages')
-      .where('type', isEqualTo: 'call')
-      .orderBy('timestamp', descending: true)
-      .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((d) => MessageModel.fromMap(d.data())).toList());
-}
+  Stream<List<MessageModel>> getCallHistory() {
+    return _firestore
+        .collection('messages')
+        .where('type', isEqualTo: 'call')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((d) => MessageModel.fromMap(d.data())).toList(),
+        );
+  }
 }
