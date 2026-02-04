@@ -166,79 +166,100 @@ class MessageAndImageDisplay extends StatelessWidget {
     );
   }
 
-  /// POPUP (corrected)
-  void _showPopup(BuildContext context) {
-    final overlay = Overlay.of(context);
-    final ctx = _bubbleKey.currentContext;
-    if (ctx == null) return;
+  /// POPUP 
+void _showPopup(BuildContext context) {
+  final overlay = Overlay.of(context);
+  final ctx = _bubbleKey.currentContext;
+  if (ctx == null || overlay == null) return;
 
-    final box = ctx.findRenderObject() as RenderBox;
-    final pos = box.localToGlobal(Offset.zero);
-    final size = box.size;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  final box = ctx.findRenderObject() as RenderBox;
+  final pos = box.localToGlobal(Offset.zero);
+  final size = box.size;
 
-    final openAbove =
-        screenHeight - (pos.dy + size.height) < _menuHeight;
+  final media = MediaQuery.of(context);
+  final screenWidth = media.size.width;
+  final screenHeight = media.size.height;
 
-    late OverlayEntry entry;
 
-    entry = OverlayEntry(
-      builder: (_) => Stack(
-        children: [
-          GestureDetector(
-            onTap: () => entry.remove(),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: Container(color: Colors.black.withOpacity(0.25)),
-            ),
-          ),
+  double bubbleTop = pos.dy;
+  double reactionTop = bubbleTop + size.height + 8;
+  double menuTop = reactionTop + _reactionBarHeight + 8;
 
-          /// ✅ SAFE PREVIEW (no GlobalKey)
-          Positioned(
-            left: pos.dx,
-            top: pos.dy,
-            width: size.width,
-            height: size.height,
-            child: Material(
-              color: Colors.transparent,
-              child: _bubbleContent(context),
-            ),
-          ),
+  final totalPopupHeight =
+      size.height + 8 + _reactionBarHeight + 8 + _menuHeight;
 
-          Positioned(
-            left: isMe
-                ? (pos.dx + size.width - 300)
-                    .clamp(8.0, screenWidth - 300)
-                : pos.dx,
-            top: openAbove
-                ? pos.dy - _reactionBarHeight - 8
-                : pos.dy + size.height + 8,
-            child: _reactionBar(entry),
-          ),
 
-          Positioned(
-            left: isMe
-                ? (pos.dx + size.width - _menuWidth)
-                    .clamp(8.0, screenWidth - _menuWidth - 8)
-                : pos.dx,
-            top: openAbove
-                ? pos.dy - _reactionBarHeight - _menuHeight - 16
-                : pos.dy + size.height + _reactionBarHeight + 16,
-            child: _optionsCard(entry),
-          ),
-        ],
-      ),
-    );
+  double shiftUp = 0;
+  final maxBottom = screenHeight - 16;
 
-    overlay.insert(entry);
+  if (bubbleTop + totalPopupHeight > maxBottom) {
+    shiftUp = (bubbleTop + totalPopupHeight) - maxBottom;
   }
 
-  Widget _reactionBar(OverlayEntry entry) {
-    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  bubbleTop -= shiftUp;
+  reactionTop -= shiftUp;
+  menuTop -= shiftUp;
 
-    return Material(
-      color: Colors.transparent,
+  // Horizontal clamp
+  final left = pos.dx.clamp(
+    8.0,
+    screenWidth - _menuWidth - 8,
+  );
+
+  late OverlayEntry entry;
+
+  entry = OverlayEntry(
+    builder: (_) => Stack(
+      children: [
+        // Background blur
+        GestureDetector(
+          onTap: () => entry.remove(),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(color: Colors.black.withOpacity(0.25)),
+          ),
+        ),
+
+     
+        Positioned(
+          left: pos.dx,
+          top: bubbleTop,
+          width: size.width,
+          height: size.height,
+          child: Material(
+            color: Colors.transparent,
+            child: _bubbleContent(context),
+          ),
+        ),
+
+        // Reaction bar
+        Positioned(
+          left: left,
+          top: reactionTop,
+          child: _reactionBar(entry),
+        ),
+
+        // Options menu
+        Positioned(
+          left: left,
+          top: menuTop,
+          child: _optionsCard(entry),
+        ),
+      ],
+    ),
+  );
+
+  overlay.insert(entry);
+}
+
+
+Widget _reactionBar(OverlayEntry entry) {
+  final emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+  return Material(
+    color: Colors.transparent,
+    child: Transform.translate(
+      offset: const Offset(-60, 0), 
       child: Container(
         height: _reactionBarHeight,
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -262,14 +283,18 @@ class MessageAndImageDisplay extends StatelessWidget {
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(e, style: const TextStyle(fontSize: 26)),
+                child: Text(
+                  e,
+                  style: const TextStyle(fontSize: 26),
+                ),
               ),
             );
           }).toList(),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _optionsCard(OverlayEntry entry) {
     return Material(
