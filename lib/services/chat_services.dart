@@ -434,38 +434,52 @@ class ChatServices {
   }
 
   ///---------------------CALL HISTORY----------------------
-  Future<String> addCallHistory({
-    required String chatId,
-    required bool isVideoCall,
-    required String callStatus,
-    int? duration,
-  }) async {
-    try {
-      final currentUser = _auth.currentUser;
-      final messageId = _firestore.collection('messages').doc().id;
+ Future<String> addCallHistory({
+  required String chatId,
+  
+  required bool isVideoCall,
+  required String callStatus, // 'missed', 'outgoing', 'answered'
+  int? duration,
+}) async {
+  try {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return 'User not logged in';
 
-      await _firestore.collection('messages').doc(messageId).set({
-        'messageId': messageId,
-        'senderId': currentUserUid,
-        'senderName': currentUser?.displayName ?? 'user',
-        'message': isVideoCall ? 'Video call' : 'Audio call',
-        'callType': isVideoCall ? 'video' : 'audio',
-        'callStatus': callStatus,
-        'duration': duration,
-        'timestamp': FieldValue.serverTimestamp(),
-        'readBy': {
-          currentUserUid:
-              FieldValue.serverTimestamp(), // Mark as read by sender
-        },
-        'chatId': chatId,
-        'type': 'call',
-      });
-      return 'success';
-    } catch (e) {
-      debugPrint("Error adding call history: $e");
-      return e.toString();
-    }
+    final messageId = _firestore.collection('messages').doc().id;
+
+    await _firestore.collection('messages').doc(messageId).set({
+      'messageId': messageId,
+
+      // 🔑 WHO initiated the call
+      'senderId': currentUser.uid,
+      'senderName': currentUser.displayName ?? 'user',
+
+      // 📞 Call info
+      'message': isVideoCall ? 'Video call' : 'Audio call',
+      'callType': isVideoCall ? 'video' : 'audio',
+      'callStatus': callStatus, // missed / outgoing / answered
+      'duration': duration ?? 0,
+
+      // ⏱ Time
+      'timestamp': FieldValue.serverTimestamp(),
+
+      // 📌 Meta
+      'chatId': chatId,
+      'type': 'call',
+
+      // 👁 Read status
+      'readBy': {
+        currentUser.uid: FieldValue.serverTimestamp(),
+      },
+    });
+
+    return 'success';
+  } catch (e) {
+    debugPrint("Error adding call history: $e");
+    return e.toString();
   }
+}
+
 
   ///---------------------- Mark Message As Read (message status) -------------------
   Future<void> markMessageAsRead(String chatId) async {
@@ -585,7 +599,63 @@ Stream<List<MessageModel>> getCallHistory() {
       .where('type', isEqualTo: 'call')
       .orderBy('timestamp', descending: true)
       .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((d) => MessageModel.fromMap(d.data())).toList());
+      .map(
+        (snapshot) => snapshot.docs
+            .map((d) => MessageModel.fromMap(d.data()))
+            .toList(),
+      );
 }
+
+
+Future<void> deleteMessage({
+  required String chatId,
+  required String messageId,
+}) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+
+    debugPrint("✅ Message deleted: $messageId");
+  } catch (e) {
+    debugPrint("❌ Error deleting message: $e");
+    rethrow;
+  }
+}
+
+ Future<void> updateMessageReaction({
+  required String chatId,
+  required String messageId,
+  required String? reaction,
+}) async {
+  try {
+    final docRef =
+        _firestore.collection('messages').doc(messageId);
+
+    if (reaction == null) {
+      // ❌ REMOVE reaction
+      await docRef.update({
+        'reaction': FieldValue.delete(),
+      });
+    } else {
+      // ✅ ADD / UPDATE reaction
+      await docRef.update({
+        'reaction': reaction,
+      });
+    }
+
+    debugPrint("✅ Reaction updated: $reaction");
+  } catch (e) {
+    debugPrint("❌ Error updating reaction: $e");
+  }
+}
+
+  Future<void> deleteChat(String chatId) async {}
+
+
+
+
+
+
 }

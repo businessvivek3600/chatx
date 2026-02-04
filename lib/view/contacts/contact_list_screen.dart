@@ -12,11 +12,11 @@ class ContactsPage extends ConsumerStatefulWidget {
 
 class _ContactsPageState extends ConsumerState<ContactsPage> {
   Future<void> onRefresh() async {
-    ///clear friendship cache before refreshing
+    /// clear friendship cache before refreshing
     ref.invalidate(contactProvider);
     ref.invalidate(requestProvider);
 
-    ///wait a bit for the provider refresh to complete
+    /// wait a bit for the provider refresh to complete
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -25,34 +25,38 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
     ref.watch(autoRefreshProvider);
     final contact = ref.watch(filteredUsersProvider);
     final searchQuery = ref.watch(searchQueryProvider);
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('All Contacts', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'All Contacts',
+          style: TextStyle(color: Colors.black),
+        ),
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(56),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: TextField(
               onChanged: (value) =>
                   ref.read(searchQueryProvider.notifier).state = value,
               decoration: InputDecoration(
                 hintText: 'enter here name or email',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear),
+                        icon: const Icon(Icons.clear),
                         onPressed: () =>
                             ref.read(searchQueryProvider.notifier).state = '',
                       )
                     : null,
-                border: OutlineInputBorder(
+                border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(25)),
                 ),
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
                 ),
@@ -61,6 +65,7 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
           ),
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: RefreshIndicator(
@@ -68,23 +73,37 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
           onRefresh: onRefresh,
           child: contact.when(
             data: (contactList) {
+              /// 🔹 EMPTY SEARCH RESULT
               if (contactList.isEmpty && searchQuery.isEmpty) {
                 return ListView(
-                  children: [
-                    SizedBox(height: 200),
-                    Text('No users found matching your search'),
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  children: const [
+                    SizedBox(height: 20),
+                    Center(child: Text('No users found matching your search')),
                   ],
                 );
               }
+
+              /// 🔹 NO CONTACTS
               if (contactList.isEmpty) {
                 return ListView(
-                  children: [
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  children: const [
                     SizedBox(height: 200),
-                    Text('No other user found'),
+                    Center(child: Text('No other user found')),
                   ],
                 );
               }
+
+              /// 🔹 CONTACT LIST
               return ListView.builder(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
                 itemCount: contactList.length,
                 itemBuilder: (context, index) {
                   final user = contactList[index];
@@ -92,8 +111,14 @@ class _ContactsPageState extends ConsumerState<ContactsPage> {
                 },
               );
             },
-            error: (error, stackTrace) => ListView(),
-            loading: () => CircularProgressIndicator(),
+
+            error: (_, __) => ListView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+            ),
+
+            loading: () => const Center(child: CircularProgressIndicator()),
           ),
         ),
       ),

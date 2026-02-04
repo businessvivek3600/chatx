@@ -1,154 +1,321 @@
+import 'dart:ui';
 import 'package:chatx/core/utils/colors.dart';
-import 'package:chatx/model/message_model.dart';
-import 'package:chatx/view/chats/chat_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/utils/time_format.dart';
-import 'image_full_screen.dart';
 import 'message_status_icon.dart';
+import 'package:chatx/model/message_model.dart';
 
 class MessageAndImageDisplay extends StatelessWidget {
-  const MessageAndImageDisplay({
+  MessageAndImageDisplay({
     super.key,
     required this.isMe,
-    required this.widget,
     required this.message,
+    required this.onDelete,
+    required this.onReact,
+    required this.otherUserName,
+    required this.otherUserPhoto,
+    required this.otherUserUid,
   });
+
   final bool isMe;
-  final ChatScreen widget;
   final MessageModel message;
+  final Future<void> Function() onDelete;
+  final Future<void> Function(String? emoji) onReact;
+  final String otherUserName;
+  final String? otherUserPhoto;
+  final String otherUserUid;
+
+  final GlobalKey _bubbleKey = GlobalKey();
+
+  static const double _menuWidth = 240;
+  static const double _menuHeight = 300;
+  static const double _reactionBarHeight = 56;
+
   @override
   Widget build(BuildContext context) {
-    final image = widget.otherUser.photoUrl;
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             CircleAvatar(
-              backgroundImage: image != null ? NetworkImage(image) : null,
-              child: image == null
-                  ? Text(widget.otherUser.name[0].toLowerCase())
-                  : Text("U"),
+              radius: 14,
+              backgroundImage:
+                  otherUserPhoto != null ? NetworkImage(otherUserPhoto!) : null,
+              child: otherUserPhoto == null
+                  ? Text(otherUserName[0].toUpperCase())
+                  : null,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
-          Flexible(
+          Flexible(child: _messageWithReaction(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _messageWithReaction(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        _bubble(context),
+        if (message.reaction != null && message.reaction!.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(
+              top: 2,
+              left: isMe ? 0 : 8,
+              right: isMe ? 8 : 0,
+            ),
             child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: message.type == 'image' ? 0 : 10,
-                vertical: message.type == 'image' ? 0 : 10,
-              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
-                color: isMe ? Colors.blueAccent : Colors.grey[300],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ///image display
-                  if (message.type == 'image' && message.imageUrl != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: GestureDetector(
-                        onTap: () {
-                          showFullScreenImage(message.imageUrl!, context);
-                        },
-                        child: Container(
-                          constraints: BoxConstraints(
-                            maxHeight: 300,
-                            maxWidth: 250,
-                          ),
-                          child: Image.network(
-                            message.imageUrl!,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return SizedBox(
-                                height: 200,
-                                width: 200,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: Colors.grey.shade300,
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if(message.message.isNotEmpty) const SizedBox(height: 8,),
-                  ],
-                  const SizedBox(height: 8,),
-                  /// Text message (for regular message or image captions
-                  if (message.message.isNotEmpty)
-                    Padding(
-                      padding: message.type == 'image'?
-                      const EdgeInsets.only(left: 10) : EdgeInsets.zero,
-                      child: Text(
-                        message.message,
-                        style: TextStyle(
-                          color: isMe ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding:
-                  message.type == 'image'?
-                    const EdgeInsets.only(left: 20,bottom: 5) : EdgeInsets.zero,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        SizedBox(width: 4),
-                        Text(
-                          formatMessageTime(message.timestamp),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isMe ? Colors.white : Colors.black,
-                          ),
-                        ),
-
-                        if (isMe) ...[
-                          SizedBox(width: 4),
-
-                          ///Message status icon
-                          buildMessageStatusIcon(message, widget.otherUser.uid)
-                        ],
-                      ],
-                    ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 4,
+                    color: Colors.black.withOpacity(0.15),
                   ),
-                  const SizedBox(height: 4,),
                 ],
+              ),
+              child: Text(
+                message.reaction!,
+                style: const TextStyle(fontSize: 14),
               ),
             ),
           ),
-          if (isMe) const SizedBox(),
+      ],
+    );
+  }
+
+  /// REAL bubble (has GlobalKey)
+  Widget _bubble(BuildContext context) {
+    return GestureDetector(
+      key: _bubbleKey,
+      onLongPress: () => _showPopup(context),
+      child: _bubbleContent(context),
+    );
+  }
+
+  /// ✅ UI-only bubble (NO GlobalKey) — used for overlay preview
+  Widget _bubbleContent(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.7,
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 6),
+        decoration: BoxDecoration(
+     color: isMe ? kPrimary : Colors.grey.shade300,
+
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft:
+                isMe ? const Radius.circular(18) : const Radius.circular(6),
+            bottomRight:
+                isMe ? const Radius.circular(6) : const Radius.circular(18),
+          ),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 2,
+              color: Colors.black.withOpacity(0.12),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message.message,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.3,
+                color: isMe ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  formatMessageTime(message.timestamp),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isMe ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  buildMessageStatusIcon(message, otherUserUid),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// POPUP (corrected)
+  void _showPopup(BuildContext context) {
+    final overlay = Overlay.of(context);
+    final ctx = _bubbleKey.currentContext;
+    if (ctx == null) return;
+
+    final box = ctx.findRenderObject() as RenderBox;
+    final pos = box.localToGlobal(Offset.zero);
+    final size = box.size;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final openAbove =
+        screenHeight - (pos.dy + size.height) < _menuHeight;
+
+    late OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          GestureDetector(
+            onTap: () => entry.remove(),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(color: Colors.black.withOpacity(0.25)),
+            ),
+          ),
+
+          /// ✅ SAFE PREVIEW (no GlobalKey)
+          Positioned(
+            left: pos.dx,
+            top: pos.dy,
+            width: size.width,
+            height: size.height,
+            child: Material(
+              color: Colors.transparent,
+              child: _bubbleContent(context),
+            ),
+          ),
+
+          Positioned(
+            left: isMe
+                ? (pos.dx + size.width - 300)
+                    .clamp(8.0, screenWidth - 300)
+                : pos.dx,
+            top: openAbove
+                ? pos.dy - _reactionBarHeight - 8
+                : pos.dy + size.height + 8,
+            child: _reactionBar(entry),
+          ),
+
+          Positioned(
+            left: isMe
+                ? (pos.dx + size.width - _menuWidth)
+                    .clamp(8.0, screenWidth - _menuWidth - 8)
+                : pos.dx,
+            top: openAbove
+                ? pos.dy - _reactionBarHeight - _menuHeight - 16
+                : pos.dy + size.height + _reactionBarHeight + 16,
+            child: _optionsCard(entry),
+          ),
         ],
       ),
+    );
+
+    overlay.insert(entry);
+  }
+
+  Widget _reactionBar(OverlayEntry entry) {
+    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        height: _reactionBarHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 25,
+              color: Colors.black.withOpacity(0.2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: emojis.map((e) {
+            return GestureDetector(
+              onTap: () async {
+                await onReact(message.reaction == e ? null : e);
+                entry.remove();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(e, style: const TextStyle(fontSize: 26)),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _optionsCard(OverlayEntry entry) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: _menuWidth,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 30,
+              color: Colors.black.withOpacity(0.18),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _tile(Icons.reply, 'Reply', () => entry.remove()),
+            _tile(Icons.forward, 'Forward', () => entry.remove()),
+            _tile(Icons.copy, 'Copy', () {
+              Clipboard.setData(ClipboardData(text: message.message));
+              entry.remove();
+            }),
+            _tile(Icons.delete_outline, 'Delete', () async {
+              entry.remove();
+              await onDelete();
+            }, color: Colors.red),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tile(
+    IconData icon,
+    String text,
+    VoidCallback onTap, {
+    Color color = Colors.black87,
+  }) {
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, size: 22, color: color),
+      title: Text(text, style: TextStyle(fontSize: 16, color: color)),
+      onTap: onTap,
     );
   }
 }

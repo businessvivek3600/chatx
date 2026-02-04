@@ -13,60 +13,80 @@ class CallHistory extends StatelessWidget {
     required this.isVideo,
     required this.message,
   });
+
   final bool isMe;
   final ChatScreen widget;
   final bool isMissed;
   final bool isVideo;
   final MessageModel message;
+
   @override
   Widget build(BuildContext context) {
+    /// 🔴 MISSED + INCOMING ONLY
+    final bool isMissedIncoming = isMissed && !isMe;
+
+    final Color callColor =
+        isMissedIncoming ? Colors.red : Colors.green;
+
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
+          // ---------------- AVATAR (incoming only) ----------------
           if (!isMe) ...[
             CircleAvatar(
               backgroundImage: widget.otherUser.photoUrl != null
                   ? NetworkImage(widget.otherUser.photoUrl!)
                   : null,
               child: widget.otherUser.photoUrl == null
-                  ? Text(widget.otherUser.name[0].toLowerCase())
-                  : Text("U"),
+                  ? Text(
+                      widget.otherUser.name[0].toUpperCase(),
+                      style: const TextStyle(color: Colors.white),
+                    )
+                  : null,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
           ],
+
+          // ---------------- CALL BUBBLE ----------------
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.green.withAlpha(50),
+              color: callColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.green, width: 2),
+              border: Border.all(color: callColor, width: 1.6),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   isVideo ? Icons.videocam : Icons.call,
-                  color: Colors.green,
+                  color: callColor,
+                  size: 18,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
+
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isMissed
-                          ? (isMe ? "Call not answered" : "Miss call")
+                      isMissedIncoming
+                          ? "Missed ${isVideo ? "video" : "audio"} call"
                           : "${isVideo ? "Video" : "Audio"} call",
                       style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500,
+                        color: callColor,
+                        fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       formatMessageTime(message.timestamp),
                       style: TextStyle(
-                        color: Colors.green.withAlpha(198),
+                        color: callColor.withOpacity(0.8),
                         fontSize: 10,
                       ),
                     ),
@@ -75,9 +95,8 @@ class CallHistory extends StatelessWidget {
               ],
             ),
           ),
-          if(isMe) ...[
-            SizedBox(width: 8,)
-          ]
+
+          if (isMe) const SizedBox(width: 8),
         ],
       ),
     );

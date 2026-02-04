@@ -2,7 +2,6 @@ import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_not
 import 'package:flutter/material.dart';
 
 import '../../core/utils/colors.dart';
-import '../../core/widgets/card_decoration.dart';
 import '../call_history/call_history.dart';
 import '../chats/chat_list_screen.dart';
 import '../contacts/contact_list_screen.dart';
@@ -16,8 +15,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final NotchBottomBarController _notchController =
-  NotchBottomBarController(index: 0);
+  final NotchBottomBarController _notchController = NotchBottomBarController(
+    index: 0,
+  );
 
   late final PageController _pageController;
 
@@ -51,9 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
           children: _pages,
         ),
       ),
+
+      /// 🔴 ONLY CHANGE IS HERE (background color)
       bottomNavigationBar: AnimatedNotchBottomBar(
         notchBottomBarController: _notchController,
-        color: kNavBg,
+        color: kBackground,
         showLabel: true,
         shadowElevation: 12,
         notchColor: kAccent,
@@ -61,28 +63,22 @@ class _HomeScreenState extends State<HomeScreen> {
         kBottomRadius: 20,
         bottomBarItems: const [
           BottomBarItem(
-            inActiveItem:
-            Icon(Icons.chat_bubble_outline, color: Colors.grey),
-            activeItem:
-            Icon(Icons.chat_bubble, color: Colors.white),
+            inActiveItem: Icon(Icons.chat_bubble_outline, color: Colors.grey),
+            activeItem: Icon(Icons.chat_bubble, color: Colors.white),
             itemLabel: 'Chats',
           ),
           BottomBarItem(
-            inActiveItem:
-            Icon(Icons.people_outline, color: Colors.grey),
+            inActiveItem: Icon(Icons.people_outline, color: Colors.grey),
             activeItem: Icon(Icons.people, color: Colors.white),
             itemLabel: 'Contacts',
           ),
           BottomBarItem(
-            inActiveItem:
-            Icon(Icons.call_outlined, color: Colors.grey),
-            activeItem:
-            Icon(Icons.call, color: Colors.white),
+            inActiveItem: Icon(Icons.call_outlined, color: Colors.grey),
+            activeItem: Icon(Icons.call, color: Colors.white),
             itemLabel: 'Calls',
           ),
           BottomBarItem(
-            inActiveItem:
-            Icon(Icons.person_outline, color: Colors.grey),
+            inActiveItem: Icon(Icons.person_outline, color: Colors.grey),
             activeItem: Icon(Icons.person, color: Colors.white),
             itemLabel: 'Profile',
           ),

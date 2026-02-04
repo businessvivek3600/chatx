@@ -20,292 +20,420 @@ class ChatListScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatListScreenState extends ConsumerState<ChatListScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchText = '';
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    //force refresh when screen is first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.invalidate(requestProvider);
       ref.invalidate(chatsProvider);
-      onRefresh();
     });
   }
 
-  Future<void> onRefresh() async {
-    // clear friendship cache before refreshing
-    ref.invalidate(chatsProvider);
-    ref.invalidate(requestProvider);
-    //wait a bit for the data to be refreshed
-    await Future.delayed(const Duration(milliseconds: 500));
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final pendingRequests = ref.watch(requestProvider);
     final chats = ref.watch(chatsProvider);
-    //count pending request
-    final requestCount = pendingRequests.when(
-      data: (data) => data.length,
-      error: (error, stackTrace) => 0,
-      loading: () => 0,
+    final requests = ref.watch(requestProvider);
+
+    final requestCount = requests.maybeWhen(
+      data: (d) => d.length,
+      orElse: () => 0,
     );
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Chats',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: false,
-        actions: [
-          ///Notification icon only when there are pending requests
-          IconButton(
-            onPressed: () => NavigationHelper.push(context, RequestScreen()),
-            icon: Stack(
-              children: [
-                Icon(Icons.notifications, color: Colors.black),
-                if (requestCount > 0)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$requestCount',
-                        style: TextStyle(color: Colors.white, fontSize: 10),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      // pull-to-refresh + chat list display
-      body: RefreshIndicator(
-        onRefresh: onRefresh,
-        child: chats.when(
-          /// case 1: chats loaded successfully
-          data: (chatsLists) {
-            if (chatsLists.isEmpty) {
-              return ListView(
-                physics: AlwaysScrollableScrollPhysics(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ---------------- HEADER ----------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+              child: Row(
                 children: [
-                  SizedBox(height: 200),
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'No chats yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Go  to users tab to send a message requests',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            /// --- if chats exists -> show chat list ---
-            return ListView.builder(
-              physics: AlwaysScrollableScrollPhysics(),
-              itemCount: chatsLists.length,
-              itemBuilder: (context, index) {
-                final chat = chatsLists[index];
-                //fetch other user details
-                return FutureBuilder<UserModel?>(
-                  future: _getOtherUser(chat.participants),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return SizedBox();
-                    final otherUsers = snapshot.data!;
-                    final currentUserId =
-                        FirebaseAuth.instance.currentUser?.uid;
-                    if (currentUserId == null) return SizedBox();
-                    // count unread messages
-                    // Get unread count for current user - CORRECT LOGIC
-                    final unReadCount = chat.unreadCount[currentUserId] ?? 0;
-
-// Show unread highlight if:
-// 1. There are unread messages (unReadCount > 0)
-// 2. The last message was NOT sent by current user
-                    final shouldShowUnread = unReadCount > 0 && chat.lastSenderId != currentUserId;
-
-                    return ListTile(
-                      //user profile + online/offline status
-                      leading: Stack(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: kPrimary,
-                            backgroundImage: otherUsers.photoUrl != null
-                                ? NetworkImage(otherUsers.photoUrl!)
-                                : null,
-                            child: Text(
-                              otherUsers.photoUrl == null
-                                  ? otherUsers.name[0]
-                                  : "U",
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ),
-
-                          ///online/offline status
-                          if (chat.participants.contains(currentUserId))
-                            Positioned(
-                              bottom: 0,
-                              right: 2,
-                              child: Consumer(
-                                builder: (context, ref, _) {
-                                  final statusAsync = ref.watch(
-                                    userStateProvider(otherUsers.uid),
-                                  );
-
-                                  return statusAsync.when(
-                                    data: (isOnline) => CircleAvatar(
-                                      radius: 5,
-                                      backgroundColor: isOnline
-                                          ? Colors.green
-                                          : Colors.grey,
-                                    ),
-                                    error: (error, _) => Text(otherUsers.email),
-                                    loading: () => Text(otherUsers.email),
-                                  );
-                                },
-                              ),
-                            ),
-                        ],
-                      ),
-
-                      ///name of the user
-                      title: Text(
-                        otherUsers.name,
-                        style: TextStyle(
-                          fontWeight: shouldShowUnread
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-
-                          color: Colors.black,
-                        ),
-                      ),
-                      subtitle: Text(
-                        chat.lastMessage.isNotEmpty
-                            ? chat.lastMessage
-                            : "You can now start to chat",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: shouldShowUnread ? FontWeight.bold : FontWeight.normal,
-
-                          color: Colors.black,
-                        ),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(formatTime(chat.lastMessageTime),style: TextStyle(
-                            fontSize: 12,
-                            color: shouldShowUnread ? Colors.blue : Colors.grey,
-                          ),),
-                          if (shouldShowUnread && unReadCount > 0)
-                            Container(
-                              margin: EdgeInsets.only(top: 4),
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(  unReadCount > 9 ? '9+' : '$unReadCount',style: TextStyle(color: Colors.white,fontSize: 12),),
-                            )
-                        ],
-                      ),
-                      onTap: () => NavigationHelper.push(
-                        context,
-                        ChatScreen(chatId: chat.chatId, otherUser: otherUsers),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
-
-          /// Case 3: case on error state
-          error: (error, _) => ListView(
-            children: [
-              SizedBox(height: 200),
-              Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.error_outline, size: 100, color: Colors.red),
-                    SizedBox(height: 20),
-                    Text(
-                      'Error loading chats',
+                  const Expanded(
+                    child: Text(
+                      'Chats',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Please try again later',
-                      style: TextStyle(fontSize: 16),
+                  ),
+
+                  // 🔔 Notifications
+                  IconButton(
+                    onPressed: () =>
+                        NavigationHelper.push(context, const RequestScreen()),
+                    icon: Stack(
+                      children: [
+                        const Icon(Icons.notifications_none),
+                        if (requestCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: CircleAvatar(
+                              radius: 8,
+                              backgroundColor: Colors.red,
+                              child: Text(
+                                '$requestCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: onRefresh,
-                      child: Text('Refresh'),
-                    ),
-                  ],
+                  ),
+
+                  // ⋮ APP BAR MENU (KEPT)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) async {
+                      if (value == 'logout') {
+                        await FirebaseAuth.instance.signOut();
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'settings', child: Text('Settings')),
+                      PopupMenuItem(
+                        value: 'logout',
+                        child: Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ---------------- SEARCH ----------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() {
+                  _searchText = v.toLowerCase();
+                }),
+                decoration: InputDecoration(
+                  hintText: 'Search',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: kPrimary),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
 
-          /// Case 2: case to loading state
-          loading: () => Center(child: CircularProgressIndicator()),
+            const Divider(height: 1),
+
+            // ---------------- CHAT LIST ----------------
+            Expanded(
+              child: chats.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) =>
+                    const Center(child: Text('Error loading chats')),
+                data: (chatList) {
+                  if (chatList.isEmpty) {
+                    return const Center(child: Text('No chats yet'));
+                  }
+
+                  return ListView.separated(
+                    itemCount: chatList.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(indent: 72, height: 1),
+                    itemBuilder: (context, index) {
+                      final chat = chatList[index];
+
+                      return FutureBuilder<UserModel?>(
+                        future: _getOtherUser(chat.participants),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox(height: 72);
+                          }
+
+                          final otherUser = snapshot.data!;
+                          final myId = FirebaseAuth.instance.currentUser!.uid;
+
+                          if (_searchText.isNotEmpty &&
+                              !otherUser.name.toLowerCase().contains(
+                                _searchText,
+                              )) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final unread = chat.unreadCount[myId] ?? 0;
+                          final showUnread =
+                              unread > 0 && chat.lastSenderId != myId;
+
+                          return GestureDetector(
+                            onLongPress: () =>
+                                _showChatOptions(context, chat.chatId),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              leading: _Avatar(user: otherUser),
+                              title: Text(
+                                otherUser.name,
+                                style: TextStyle(
+                                  fontWeight: showUnread
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                chat.lastMessage.isNotEmpty
+                                    ? chat.lastMessage
+                                    : 'Tap to start chatting',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    formatTime(chat.lastMessageTime),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: showUnread
+                                          ? kPrimary
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  if (showUnread)
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: kPrimary,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Text(
+                                        unread > 9 ? '9+' : unread.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              onTap: () => NavigationHelper.push(
+                                context,
+                                ChatScreen(
+                                  chatId: chat.chatId,
+                                  otherUser: otherUser,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // helper method -. get details of the other user in chat
-  Future<UserModel?> _getOtherUser(List<String> participants) async {
-    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserUid == null) return null;
-    final otherUserUid = participants.firstWhere(
-      (uid) => uid != currentUserUid,
+  // ---------------- iOS STYLE POPUP ----------------
+
+  void _showChatOptions(BuildContext context, String chatId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _iosCard(
+                  children: [
+                    _iosTile(
+                      Icons.person_outline,
+                      'View profile',
+                      () => Navigator.pop(context),
+                    ),
+                    _divider(),
+                    _iosTile(
+                      Icons.notifications_off_outlined,
+                      'Mute',
+                      () => Navigator.pop(context),
+                    ),
+                    _divider(),
+                    _iosTile(Icons.delete_outline, 'Delete chat', () async {
+                      Navigator.pop(context);
+                      await ref.read(chatServiceProvider).deleteChat(chatId);
+                    }, destructive: true),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _iosCancel(context),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(otherUserUid)
-          .get();
-      return doc.exists ? UserModel.fromMap(doc.data()!) : null;
-    } catch (e) {
-      print("Error getting other user: $e");
-      return null;
-    }
+  }
+
+  // ---------------- HELPERS ----------------
+
+  Future<UserModel?> _getOtherUser(List<String> participants) async {
+    final myId = FirebaseAuth.instance.currentUser!.uid;
+    final otherId = participants.firstWhere((id) => id != myId);
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(otherId)
+        .get();
+
+    return doc.exists ? UserModel.fromMap(doc.data()!) : null;
+  }
+}
+
+// ---------------- iOS UI HELPERS ----------------
+
+Widget _iosCard({required List<Widget> children}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Column(children: children),
+  );
+}
+
+Widget _iosTile(
+  IconData icon,
+  String text,
+  VoidCallback onTap, {
+  bool destructive = false,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Row(
+        children: [
+          Icon(icon, color: destructive ? Colors.red : Colors.black),
+          const SizedBox(width: 14),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 17,
+              color: destructive ? Colors.red : Colors.black,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _iosCancel(BuildContext context) {
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: TextButton(
+      onPressed: () => Navigator.pop(context),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 14),
+        child: Text(
+          'Cancel',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _divider() {
+  return Container(
+    height: 0.6,
+    margin: const EdgeInsets.only(left: 52),
+    color: Colors.grey.shade300,
+  );
+}
+
+// ---------------- AVATAR ----------------
+
+class _Avatar extends ConsumerWidget {
+  final UserModel user;
+  const _Avatar({required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(userStateProvider(user.uid));
+
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 26,
+          backgroundImage: user.photoUrl != null
+              ? NetworkImage(user.photoUrl!)
+              : null,
+          child: user.photoUrl == null
+              ? Text(
+                  user.name[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+        ),
+        Positioned(
+          bottom: 2,
+          right: 2,
+          child: status.maybeWhen(
+            data: (online) => CircleAvatar(
+              radius: 6,
+              backgroundColor: online ? Colors.green : Colors.grey,
+            ),
+            orElse: () => const SizedBox(),
+          ),
+        ),
+      ],
+    );
   }
 }
