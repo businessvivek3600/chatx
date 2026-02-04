@@ -89,7 +89,7 @@ class AuthMethod {
         'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
       });
-      await FcmTokenService.saveToken();
+      //await FcmTokenService.saveToken();
 
       print("✅ LOGIN SUCCESS: ${cred.user!.email}");
       return "success";
