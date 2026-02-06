@@ -275,7 +275,6 @@ class ChatServices {
     });
   }
 
-  ///Send chat message - FIXED UNREAD COUNT
   Future<String> sendMessage({
     required String chatId,
     required String message,

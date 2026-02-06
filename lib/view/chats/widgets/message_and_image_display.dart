@@ -42,7 +42,7 @@ class MessageAndImageDisplay extends StatelessWidget {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe) ...[
+          if (!isMe) ...[ 
             CircleAvatar(
               radius: 14,
               backgroundImage:
@@ -95,7 +95,7 @@ class MessageAndImageDisplay extends StatelessWidget {
     );
   }
 
-  /// REAL bubble (has GlobalKey)
+
   Widget _bubble(BuildContext context) {
     return GestureDetector(
       key: _bubbleKey,
@@ -104,7 +104,7 @@ class MessageAndImageDisplay extends StatelessWidget {
     );
   }
 
-  /// ✅ UI-only bubble (NO GlobalKey) — used for overlay preview
+
   Widget _bubbleContent(BuildContext context) {
     return ConstrainedBox(
       constraints: BoxConstraints(

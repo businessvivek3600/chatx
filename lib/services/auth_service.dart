@@ -123,6 +123,62 @@ class AuthMethod {
     }
   }
 
+    /// CHANGE PASSWORD ---
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+
+      if (user == null || user.email == null) {
+        return "User not logged in";
+      }
+
+      if (currentPassword.isEmpty || newPassword.isEmpty) {
+        return "Please fill all fields";
+      }
+
+      // 🔐 Re-authenticate user
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+
+      // 🔄 Update password
+      await user.updatePassword(newPassword);
+
+      print("✅ PASSWORD CHANGED SUCCESSFULLY");
+      return "success";
+    }
+
+    // 🔥 Firebase Auth Errors
+    on FirebaseAuthException catch (e) {
+      print("❌ CHANGE PASSWORD ERROR");
+      print("Code: ${e.code}");
+      print("Message: ${e.message}");
+
+      switch (e.code) {
+        case 'wrong-password':
+          return "Current password is incorrect";
+        case 'weak-password':
+          return "New password is too weak";
+        case 'requires-recent-login':
+          return "Please login again to change password";
+        default:
+          return "Failed to change password";
+      }
+    }
+
+    catch (e) {
+      print("❌ UNKNOWN CHANGE PASSWORD ERROR: $e");
+      return "Unexpected error occurred";
+    }
+  }
+
+
   /// GOOGLE SIGN IN ---
   Future<String> signInWithGoogle() async {
     try {

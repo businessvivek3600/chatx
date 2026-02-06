@@ -1,16 +1,24 @@
 /* ---------------- PROFILE / SETTINGS (WHATSAPP STYLE + DIVIDERS) ---------------- */
 
-import 'package:chatx/core/utils/navigation_helper.dart';
-import 'package:chatx/model/user_profile_model.dart';
-import 'package:chatx/view/profile/component/edit_profile.dart';
+
+import 'package:chatx/view/auth/settings/aboutapp_screen.dart';
+import 'package:chatx/view/auth/settings/chatSettings_screen.dart';
+
+import 'package:chatx/view/auth/settings/help_support_screen.dart';
+import 'package:chatx/view/auth/settings/privacy_security.dart' show PrivacySecurityScreen;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:chatx/view/auth/settings/change_password.dart';
 import '../../core/utils/colors.dart';
 import '../../core/utils/logout_helper.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../providers/user_profile_provider.dart';
+import '../../model/user_profile_model.dart';
 
-/* ========================= PAGE ========================= */
+import 'component/edit_profile.dart';
+
+
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -20,64 +28,111 @@ class ProfilePage extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5), // WhatsApp background
+      backgroundColor: const Color(0xFFF0F2F5),
+
+      /// APP BAR
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+
       body: ListView(
         padding: const EdgeInsets.all(16),
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
+        physics: const BouncingScrollPhysics(),
         children: [
           ProfileHeader(profile: profile),
           const SizedBox(height: 28),
 
-          /// ACCOUNT
           SettingsSection(
             title: 'Account',
             color: Colors.blue,
-            children: const [
-              SettingsTile(icon: Icons.person_outline, title: 'Edit Profile'),
-              SettingsDivider(),
-              SettingsTile(icon: Icons.lock_outline, title: 'Change Password'),
-              SettingsDivider(),
+            children: [
+              SettingsTile(
+                icon: Icons.person_outline,
+                title: 'Edit Profile',
+                onTap: () => NavigationHelper.push(
+                  context,
+                  const EditProfilePage(),
+                ),
+              ),
+              const SettingsDivider(),
+              SettingsTile(
+                icon: Icons.lock_outline,
+                title: 'Change Password',
+                onTap: () => NavigationHelper.push(
+                  context,
+                  const ChangePasswordScreen(),
+                ),
+              ),
+              const SettingsDivider(),
               SettingsTile(
                 icon: Icons.security_outlined,
                 title: 'Privacy & Security',
+                onTap: () => NavigationHelper.push(
+                  context,
+                  const PrivacySecurityScreen(),
+                ),
               ),
             ],
-            onEditProfile: true,
           ),
 
           const SizedBox(height: 24),
 
-          /// PREFERENCES
+    
           SettingsSection(
             title: 'Preferences',
             color: kAccent,
-            children: const [
+            children: [
               SettingsTile(
                 icon: Icons.notifications_none,
                 title: 'Notifications',
+                onTap: () => _openDummy(
+                  context,
+                  'Notifications',
+                ),
               ),
-              SettingsDivider(),
-              SettingsTile(icon: Icons.dark_mode_outlined, title: 'Dark Mode'),
-              SettingsDivider(),
+             
+              const SettingsDivider(),
               SettingsTile(
                 icon: Icons.chat_bubble_outline,
                 title: 'Chat Settings',
+                onTap: () => NavigationHelper.push(
+                  context,
+                  const ChatSettingsScreen(),
+                ),
               ),
             ],
           ),
 
           const SizedBox(height: 24),
 
-          /// SUPPORT
+       
           SettingsSection(
             title: 'Support',
             color: Colors.green,
-            children: const [
-              SettingsTile(icon: Icons.help_outline, title: 'Help & Support'),
-              SettingsDivider(),
-              SettingsTile(icon: Icons.info_outline, title: 'About App'),
+            children: [
+              SettingsTile(
+                icon: Icons.help_outline,
+                title: 'Help & Support',
+                onTap: () => NavigationHelper.push(
+                  context,
+                  const HelpSupportScreen(),
+                ),
+              ),
+              const SettingsDivider(),
+              SettingsTile(
+                icon: Icons.info_outline,
+                title: 'About App',
+                onTap: ()  => NavigationHelper.push(
+                  context,
+                  const AboutAppScreen(),
+                ),
+              ),
             ],
           ),
 
@@ -87,6 +142,14 @@ class ProfilePage extends ConsumerWidget {
           const AppInfo(),
         ],
       ),
+    );
+  }
+
+  /// Dummy navigation helper
+  void _openDummy(BuildContext context, String title) {
+    NavigationHelper.push(
+      context,
+      DummySettingsPage(title: title),
     );
   }
 }
@@ -125,15 +188,15 @@ class ProfileHeader extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     profile.email ?? '--',
-                    style: const TextStyle(color: Colors.grey, fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -145,20 +208,18 @@ class ProfileHeader extends StatelessWidget {
   }
 }
 
-/* ========================= SECTION ========================= */
+
 
 class SettingsSection extends StatelessWidget {
   final String title;
   final Color color;
   final List<Widget> children;
-  final bool onEditProfile;
 
   const SettingsSection({
     super.key,
     required this.title,
     required this.color,
     required this.children,
-    this.onEditProfile = false,
   });
 
   @override
@@ -179,17 +240,7 @@ class SettingsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...children.map((widget) {
-              if (widget is SettingsTile && widget.title == 'Edit Profile') {
-                return GestureDetector(
-                  onTap: () {
-                    NavigationHelper.push(context, const EditProfilePage());
-                  },
-                  child: widget,
-                );
-              }
-              return widget;
-            }).toList(),
+            ...children,
           ],
         ),
       ),
@@ -197,27 +248,28 @@ class SettingsSection extends StatelessWidget {
   }
 }
 
-/* ========================= TILE ========================= */
+
 
 class SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final VoidCallback onTap;
 
-  const SettingsTile({super.key, required this.icon, required this.title});
+  const SettingsTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: kAccent),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
-        ),
-      ),
+      title: Text(title),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      onTap: onTap,
     );
   }
 }
@@ -229,9 +281,9 @@ class SettingsDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 56),
-      child: Divider(height: 8, thickness: 0.6, color: Colors.grey.shade300),
+    return const Padding(
+      padding: EdgeInsets.only(left: 56),
+      child: Divider(height: 8),
     );
   }
 }
@@ -248,7 +300,7 @@ class LogoutTile extends ConsumerWidget {
         leading: const Icon(Icons.logout, color: Colors.red),
         title: const Text(
           'Logout',
-          style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Colors.red),
         ),
         onTap: () => showLogoutDialog(context, ref),
       ),
@@ -268,10 +320,7 @@ class AppInfo extends StatelessWidget {
         children: [
           Text('ChatX', style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(height: 4),
-          Text(
-            'Version 1.0.0',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
+          Text('Version 1.0.0', style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
@@ -300,6 +349,32 @@ class SettingsCard extends StatelessWidget {
         ],
       ),
       child: child,
+    );
+  }
+}
+
+/* ========================= DUMMY PAGE ========================= */
+
+class DummySettingsPage extends StatelessWidget {
+  final String title;
+
+  const DummySettingsPage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: Center(
+        child: Text(
+          '$title screen coming soon',
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+      ),
     );
   }
 }

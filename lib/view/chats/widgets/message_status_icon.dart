@@ -3,36 +3,59 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-// Builds the "message status" icon (✓, ✔✓,online check)
 
-Widget buildMessageStatusIcon(MessageModel message, uid) {
+Widget buildMessageStatusIcon(
+  MessageModel message,
+  String receiverUid,
+) {
   final currentUserUid = FirebaseAuth.instance.currentUser!.uid;
-  // only show status for messages sent by current user
+
+  
   if (message.senderId != currentUserUid) {
-    return SizedBox();
+    return const SizedBox.shrink();
   }
-  // Listen to the receiver's (chat partner's ) user document
-  return StreamBuilder(
-    stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+
+  return StreamBuilder<DocumentSnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('users')
+        .doc(receiverUid)
+        .snapshots(),
     builder: (context, snapshot) {
       bool isReceiverOnline = false;
-      //check if user document exists and fetch 'isOnline field'
+
       if (snapshot.hasData && snapshot.data!.exists) {
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
-        isReceiverOnline = userData['isOnline'] ?? false;
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        isReceiverOnline = data['isOnline'] == true;
       }
-      // check if the receiver has read this message
-      final isMessageRead = message.readBy?.containsKey(uid) ?? false;
-      if (isMessageRead) {
-        // message was read by receiver then show two tick icon
-        return Icon(Icons.done_all, color: Colors.white, size: 16);
-      }else if(isReceiverOnline){
-        // receiver is online but hasn't read then show two tick icon
-        return Icon(Icons.done_all, color: Colors.black54, size: 16);
-      }else{
-        // receiver is offline then show one tick icon
-        return Icon(Icons.check, color: Colors.black54, size: 16);
+
+ 
+      final bool isSeen =
+          message.readBy != null &&
+          message.readBy!.containsKey(receiverUid);
+
+      if (isSeen) {
+        return const Icon(
+          Icons.done_all,
+          size: 16,
+          color: Colors.blue,
+        );
       }
+
+      
+      if (isReceiverOnline) {
+        return const Icon(
+          Icons.done_all,
+          size: 16,
+          color: Colors.grey,
+        );
+      }
+
+ 
+      return const Icon(
+        Icons.done,
+        size: 16,
+        color: Colors.white,
+      );
     },
   );
 }

@@ -120,29 +120,46 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
 
             // ---------------- SEARCH ----------------
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() {
-                  _searchText = v.toLowerCase();
-                }),
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(color: kPrimary),
-                  ),
-                ),
-              ),
-            ),
+  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+  child: Container(
+    height: 44,
+    decoration: BoxDecoration(
+      color: const Color(0xFFF1F3F6),
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchText = value.toLowerCase();
+        });
+      },
+      decoration: InputDecoration(
+        hintText: 'Search chats',
+        hintStyle: const TextStyle(color: Colors.grey),
+        border: InputBorder.none,
+        prefixIcon: const Icon(
+          Icons.search,
+          color: Colors.grey,
+        ),
+        suffixIcon: _searchText.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                color: Colors.grey,
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _searchText = '';
+                  });
+                },
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+      ),
+    ),
+  ),
+),
+
 
             const Divider(height: 1),
 
